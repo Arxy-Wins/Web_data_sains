@@ -1,5 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Strategi Promosi Wardah</title>
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><title>Strategi Promosi Wardah</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap">
 <style>
@@ -203,15 +202,6 @@ footer { font-size: 13px; color: var(--muted); }
       <p>Usulan dari pola keluhan di atas, bukan hasil uji sebab-akibat.</p></div>
     <div class="card"><ul class="todo" id="saran"></ul></div>
   </section>
-  <section>
-    <div class="sechead"><p class="eyebrow">Uji model</p><h2>Tempel ulasan, lihat sentimennya</h2>
-      <p>Satu ulasan per baris. Model Regresi Logistik yang sama dengan notebook (macro F1 uji 0,580) berjalan di browser dan membandingkan hasilnya dengan % positif kategori ini.</p></div>
-    <div class="demo">
-      <div class="card"><textarea id="inp" spellcheck="false" placeholder="Tempel beberapa ulasan di sini, satu per baris"></textarea>
-        <div class="btns"><button class="btn" id="bEx">Isi contoh ulasan kategori ini</button><button class="btn" id="bClr">Kosongkan</button></div></div>
-      <div class="card result" id="result" aria-live="polite"><p class="status">Memuat model...</p></div>
-    </div>
-  </section>
   </div>
 
   <div class="pane" id="pane-gabungan" role="tabpanel" aria-labelledby="tab-gabungan" hidden>
@@ -228,7 +218,7 @@ footer { font-size: 13px; color: var(--muted); }
   </section>
   </div>
 
-  <footer>Data: Google Trends mingguan 2023-08-27 sampai 2026-08-23 (dirata-rata per bulan), ulasan Wardah dan kompetitor. Bulan persiapan adalah asumsi dua bulan sebelum puncak.</footer>
+  <footer>Data: Google Trends mingguan 2023-08-27 sampai 2026-08-23 (dirata-rata per bulan), ulasan Wardah dan kompetitor. Bulan siap diambil dari bulan-bulan berturut-turut sebelum puncak yang minatnya naik (paling banyak 3). Bulan evaluasi adalah asumsi.</footer>
 </main>
 
 <script>
@@ -238,6 +228,16 @@ const BP = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','
 const $ = id => document.getElementById(id);
 const fmt = (n, d = 0) => Number(n).toLocaleString('id-ID', { minimumFractionDigits: d, maximumFractionDigits: d });
 const wrap = m => ((m - 1) % 12 + 12) % 12 + 1;
+/* Bulan siap: bulan-bulan berurutan sebelum puncak yang minatnya naik dari bulan sebelumnya, paling banyak 3. */
+function ramp(d) {
+  const out = [];
+  for (let i = 1; i <= 3; i++) {
+    const cur = wrap(d.p - i), prev = wrap(d.p - i - 1);
+    if (d.v[cur - 1] > d.v[prev - 1]) out.unshift(cur); else break;
+  }
+  return out.length ? out : [wrap(d.p - 1)];
+}
+const rng = a => a.length === 1 ? BP[a[0] - 1] : `${BP[a[0] - 1]} sampai ${BP[a[a.length - 1] - 1]}`;
 const ORDER = DATA.slice().sort((a, b) => (a.p === 12) - (b.p === 12) || b.cv - a.cv);
 let sel = 'toner';
 let LO = 100, HI = 0;
@@ -268,7 +268,7 @@ function drawCatbar() {
 
 function drawDetail() {
   const d = DATA.find(x => x.k === sel), p = d.p;
-  const prep = [wrap(p - 2), wrap(p - 1)], ev = wrap(p + 1);
+  const prep = ramp(d), ev = wrap(p + 1);
   const others = d.v.filter((_, i) => i + 1 !== p), avg = others.reduce((a, b) => a + b, 0) / others.length;
   const lonjak = (100 / avg - 1) * 100;
   const kind = m => prep.includes(m) ? 'prep' : m === p ? 'promo' : m === ev ? 'eval' : '';
@@ -289,7 +289,7 @@ function drawDetail() {
     <div class="scroll"><div class="tl">${tl}</div></div>
     <p class="caption">Tinggi batang adalah minat bulan itu (puncak = 100), digambar dari nol. Angka di atas batang adalah nilainya.</p>
     <div class="steps">
-      <div class="step prep"><span class="when">${range(prep[0], prep[1])}</span><span class="what">Siapkan</span><p>Stok, konten, dan materi promosi sudah siap sebelum minat naik.</p></div>
+      <div class="step prep"><span class="when">${rng(prep)}</span><span class="what">Siapkan</span><p>Stok, konten, dan materi promosi sudah siap sebelum minat naik.</p></div>
       <div class="step promo"><span class="when">${BP[p - 1]}</span><span class="what">Promosi puncak</span><p>Dorong promosi saat minat pencarian tertinggi tahun ini.</p></div>
       <div class="step eval"><span class="when">${BP[ev - 1]}</span><span class="what">Evaluasi</span><p>Lihat hasil promosi dan catat yang perlu disiapkan untuk tahun depan.</p></div>
     </div>`;
@@ -302,48 +302,6 @@ drawHeat();
 /* ---------------- Ulasan ---------------- */
 const CNT = {"cleanser": {"W": [787, 44, 43], "K": [462, 31, 23]}, "essence": {"W": [160, 36, 17], "K": [143, 25, 15]}, "eye cream": {"W": [116, 85, 33], "K": [10, 0, 0]}, "moisturizer": {"W": [482, 46, 22], "K": [688, 47, 34]}, "night cream": {"W": [60, 7, 3], "K": [211, 34, 35]}, "serum": {"W": [126, 6, 1], "K": [831, 68, 31]}, "sunscreen": {"W": [59, 2, 5], "K": [624, 60, 25]}, "toner": {"W": [482, 82, 50], "K": [546, 57, 26]}};
 const KEL = {"tema": {"iritasi": "jerawat|breakout|bruntus|gatal|perih|iritasi|ruam|alergi|kemerahan", "tekstur": "lengket|sticky|berat|tebal|greasy|licin", "minyak": "berminyak|minyak|oily|kilap|mengkilap", "kering": "kering|mengelupas|ngelupas|flaking|kusam|belang", "whitecast": "white ?cast|whitecast|ashy|keabu|abu-abu", "aroma": "bau|aroma|menyengat|parfum", "efek": "(?:tidak|nggak|gak|ga|ngga) (?:ngaruh|ngefek|berasa|terasa|kerasa|ada efek|ada perubahan)|kurang (?:terasa|berasa|ngefek|ngaruh)|biasa (?:saja|aja)", "kemasan": "kemasan|bocor|tumpah|pump|tutup|botol", "harga": "mahal|harga"}, "data": {"cleanser": {"W": {"n": 87, "iritasi": 43.7, "tekstur": 12.6, "minyak": 8.0, "kering": 27.6, "whitecast": 0.0, "aroma": 14.9, "efek": 11.5, "kemasan": 9.2, "harga": 9.2}, "K": {"n": 54, "iritasi": 68.5, "tekstur": 27.8, "minyak": 18.5, "kering": 42.6, "whitecast": 0.0, "aroma": 24.1, "efek": 14.8, "kemasan": 9.3, "harga": 3.7}}, "essence": {"W": {"n": 53, "iritasi": 37.7, "tekstur": 3.8, "minyak": 1.9, "kering": 9.4, "whitecast": 0.0, "aroma": 13.2, "efek": 26.4, "kemasan": 24.5, "harga": 17.0}, "K": {"n": 40, "iritasi": 15.0, "tekstur": 27.5, "minyak": 22.5, "kering": 32.5, "whitecast": 47.5, "aroma": 35.0, "efek": 0.0, "kemasan": 5.0, "harga": 27.5}}, "eye cream": {"W": {"n": 118, "iritasi": 19.5, "tekstur": 12.7, "minyak": 1.7, "kering": 11.0, "whitecast": 0.0, "aroma": 5.9, "efek": 27.1, "kemasan": 2.5, "harga": 19.5}, "K": {"n": 0, "iritasi": null, "tekstur": null, "minyak": null, "kering": null, "whitecast": null, "aroma": null, "efek": null, "kemasan": null, "harga": null}}, "moisturizer": {"W": {"n": 68, "iritasi": 36.8, "tekstur": 7.4, "minyak": 44.1, "kering": 27.9, "whitecast": 16.2, "aroma": 8.8, "efek": 13.2, "kemasan": 7.4, "harga": 23.5}, "K": {"n": 81, "iritasi": 45.7, "tekstur": 32.1, "minyak": 34.6, "kering": 23.5, "whitecast": 0.0, "aroma": 6.2, "efek": 13.6, "kemasan": 12.3, "harga": 18.5}}, "night cream": {"W": {"n": 10, "iritasi": 70.0, "tekstur": 10.0, "minyak": 50.0, "kering": 10.0, "whitecast": 0.0, "aroma": 10.0, "efek": 30.0, "kemasan": 10.0, "harga": 20.0}, "K": {"n": 69, "iritasi": 69.6, "tekstur": 11.6, "minyak": 21.7, "kering": 14.5, "whitecast": 0.0, "aroma": 33.3, "efek": 7.2, "kemasan": 7.2, "harga": 11.6}}, "serum": {"W": {"n": 7, "iritasi": 14.3, "tekstur": 28.6, "minyak": 0.0, "kering": 14.3, "whitecast": 0.0, "aroma": 0.0, "efek": 14.3, "kemasan": 42.9, "harga": 0.0}, "K": {"n": 99, "iritasi": 56.6, "tekstur": 15.2, "minyak": 11.1, "kering": 17.2, "whitecast": 0.0, "aroma": 12.1, "efek": 27.3, "kemasan": 32.3, "harga": 30.3}}, "sunscreen": {"W": {"n": 7, "iritasi": 42.9, "tekstur": 0.0, "minyak": 42.9, "kering": 28.6, "whitecast": 0.0, "aroma": 0.0, "efek": 14.3, "kemasan": 0.0, "harga": 14.3}, "K": {"n": 85, "iritasi": 25.9, "tekstur": 29.4, "minyak": 36.5, "kering": 31.8, "whitecast": 20.0, "aroma": 20.0, "efek": 12.9, "kemasan": 16.5, "harga": 9.4}}, "toner": {"W": {"n": 132, "iritasi": 53.0, "tekstur": 3.0, "minyak": 18.2, "kering": 18.2, "whitecast": 0.0, "aroma": 22.0, "efek": 21.2, "kemasan": 14.4, "harga": 18.2}, "K": {"n": 83, "iritasi": 44.6, "tekstur": 2.4, "minyak": 6.0, "kering": 18.1, "whitecast": 0.0, "aroma": 15.7, "efek": 36.1, "kemasan": 18.1, "harga": 18.1}}}};
-const CONTOH = {"cleanser": ["dgn harga 35 ribu udah sls/sless free menurut aku sih ini wort it to buy bgt ya. harga segitu dan udh bisa bikin wajah aku yg tadi kusam terus pakai ini secara rutin semingguan udah mulai bikin wajah aku cerahan bagus bgt sih. apalagi klo kita liat kandungannya yg aman bgt ini udh termasuk best fw yg pernah aku pakai", "Ini udah repurchase yang ke-3 kalinya karena sesuka itu sama produk Wardah yang satu ini. Face wash-nya ringan, lembut banget di kulit, dan paling aku suka karena bisa jaga kelembapan tanpa bikin wajah terasa kering atau ketarik. Cocok banget buat kulit sensitif kayak punyaku. Bener-bener andalan sehari-hari! ❤️", "Menurutku, ini baru beneran face wash yang low pH! Efek calming-nya berasa banget di kulit wajah aku. Sejak pakai Wardah yang Aloe + Cica ini, jerawat juga pelan-pelan hilang. Bikin kulit jadi lebih adem, tenang, dan nggak rewel lagi. Suka banget pokoknya!", "Bagusss buat ngelembapinnya tp klo buat bersihnya okeee sih buat harga segtu, cuma aku engga rupchase sampe lama, cuma habis beberapa tube doang, sesuai harga lhaa hehehe, teksturnya enak juga, terus wanginya aku juga suka sih kek soft² gtu", "Wanginya enak sih. Tapi sory aq gak suka karena susah di bilas trus ninggalin efek licin di muka. Kebetulan aq suka cleanser yang bikin agak kest di muka karena berasa bersih aja sih hehe. Dan dia ga ada efek naik tone ala2 setelah cuci muka gitu. Jadi habis cuci muka tetep kusam ga ada seger2 nya gitu", "Panas setelah diaplikasikan. Apa memang bgtu ya? Biasanya milk cleanser lain yg sy pake seperti latulip dan viva nggak panas di wajah. Sudaj dipakai 2 minggu tetep panas cuma tidak muncul jerawat atau masalah kulit lainnya", "gak cocok sama produk wardah yang ini, pas dipakai pertama kali ada kaya rasa panas gitu. aku kira karena efek produknya makanya aku lanjutin pakai eh ternyata besoknya timbul jerawat yang besar di dahi aku. jadinya stop buat pakai produk ini lagi", "Hua salah satu facewash yang aku engga suka banget. pertama karna teksturenya gel cair gitu, busanya dikit tapi kaya ga ngebersiin muka. kaya cuma lewat aja dikulit. gak ada busa tapi bikin ketarik setelah beberapa detik abis pake nya. dan wanginya kenceng bgt"], "essence": ["Sebenernya beli ini iseng karena pengen tau tapi aku sih cocok aja pakai ini tapi salah strategi karena seharusnya aku pakai ini pas trip ke labuan bajo karena ada water resistance nya tapi apa boleh buat.", "Pas ke Bali lumayan ampuh pake azarine sun shield ini tapi harus sering reapply dan aku pake untuk badan aja, karena emang ga sembarangan pake sunscreen untuk wajah. Buat badan oke ya teksturnya ga thick jadi pas diapply langsung meresap dan kering jadi ga bikin lengket badan yang keringetan, wanginya enak ga nyengat.", "aku ngerasanya produk ini ringan dan ada efek melembabkan, makanya bikin makeup jadi lebih nempel. Di aku dia ga bikin wajah buluk walau dipake secara berulang. Wanginya juga gak ganggu, dan senengnya bisa dipake di wajah dan badan, simpel", "Harganya sgt terjangkau buat yg mau coba essence utk pertama kalinya. Teksturnya cair and without any fragrance. Cepet nyerap dan ga ada rasa2 lengket di wajah. Aku udh pake kurleb 5 bulan dan g ada efeknya selain hydrating aja. Produk yg bagus tp tidak spesial", "Sudah pakai ini sampai habis, tapi masih ngerasa gak ada perubahan di wajah. Hanya sebatas lumayan melembabkan, tapi gak hydrate banget ketika kulit lagi kering. Bagusnya produk ini ya hemat aja gtu, 1 botol bisa sampai >3 bulan.", "Saya beli ini karena review orang2 yg bilang ini bagus, dan yg breakout dgn versi white secret ini lbh oke. Sayang banget saya salah satu yg nggak cocok dengan essence ini. Menurut saya tidak memberi kelembapan/hydrate di kulit saya dan bikin jerawatan di kulit saya..", "Saya kurang cocok dengan essence ini. Teksturnya cair , warnanya bening dan gampang meresap. Untuk harga waktu itu saya beli lumayan. Setelah saya apply di wajah saya rasanya seperti panas, agak nylekit di kulit.", "pilling paraaaaahhhh. gatau lagi bagaimana cara buat makainya. sudah coba skip moisturizer tapi tetap saja pilling. dan pilling nya bisa dibilang parah sih menurutku. jadi gw gak rekomendasiin produk ini. tapi kalau untuk badan masih bisa di toleransi. tapi kalau untuk wajah big NO."], "eye cream": ["Produk ini kelihatannya kecil dan sedikit ternyataaa gak abis-abis sampek 3 bulan padahal rutin makenya pagi malem. Agak susah keuar sih produknya jadi mencetnya harus agak keras, tapi ati-ati kebanyakan juga. Sejauh ini aku nggak merasakan efek brighteningnya, cuma melembabkan aja", "oke polll, bagusss bagusss mata pandaku jadi ilang, kantong mata juga okee, dia juga ringan bangett aku jadi suka bangett, tapi aku kurang tau apakah ada eye cream yang lebih oke dari ini?? karena baru pertama kali coba eye cream. tapi whitelab ini bagus sii", "Formula dan tekstur nya ringan. Setelah pemakaian hampir setahun lumayan mengurangi garis kerutan penuaan di wajahku. Sangat melembabkan kulitku yg kering ini. Ukuran juga mungil jadi mudah dibawa kemana pun terutama ketika travelling", "Lagi coba2 aja, karena cream nya lumayan cocok, tapi eye cream nya beda banget, masih zonk sihh, gak ada perubahan nih -_- Padahal biasanya gak sampe sebulan udah mendingan, paling gak better lah Ini agak beda dan gak ngaruh sih sedikit banyak, mayan lah...", "Bagiku eye cream ini cukup melembapkan dan wanginya gak terlalu mengganggu. Tapi selama pemakaian aku ngerasa tidak nyaman, sedikit perih, dan muncul milia. Produk ini akhirnya aku gunakan sebagai hand cream karena terlalu sayang untuk dibuang, hiksss~", "Ini produk eye cream kedua aku, setelah pakek garnier yg gk ada efeknya, dan gak jauh beda aku sdh pakai selama 3 bulan lebih dan gak ada efeknya sama sekali untuk kantong mata panda yang sudah parah banget, malah muncul milea di bawah mata dan gk ada pengaruhnya sama sekali dengan mata panda aku yg hitam", "produk ini di pakai di mataku tetep kering,tetep gelap,tetep puffy dan tidak ada efek sama sekali di aku.lebih lembab wardah eye cream yg renew kalau buat aku.karna sayang udah dibeli jadi tetap akan aku terusin sampai habis.kalau untuk yg kulit kering kurang ngefek", "Menurutku hasil dari eyecream Wardah Renew ini nothing special. Ntah kenapa setiap pemakaian eyecream ini kering dan peeling gitu. 1-2 kali pemakaian masih aman, tapi seterusnya muncul milia padahal kupakai tipis-tipis. Eyecream ini ku pakai tanpa ditimpa makeup karna kurang cocok (kering & peeling). Thank you Wardah!"], "moisturizer": ["jujur endyul moisturaizernya maximal pol melembabkan kulit cihuy, dan moisturaizer ini ada efek shooting and claming sangat amat bisa meredakan kemerahan di kulit aku yang agak sensif ini jujur mantap endyul", "Within 14 days, kulitku lebih firm & smile lines visibly reduced. Nggak nyangka hasilnya bisa secepat ini. Kulit terasa lebih kencang, halus, dan segar sepanjang hari. Bikin wajah tampak lebih muda dan natural.", "produk ini bener2 bagus banget, bikin wajah jadi cerah karena ada efek memutihkan di tambah spf nya 28 ,tapi aku ttep make susncreen walaupun produk ini udah ada spf nya.pas awal pake muncul beruntusan tapi beberapa hari kemudian langsung hilang dan wajah jadi tambah lembab + cerah", "pertama pemakaian lgsg keliatan hasilnya,agak cerahan gt,Tapi menurutku dia \"kurang\" di ngelembabinnya,dan agak susah di blend.Tapi sejauh ini dia gaada ngasih efek negatif di kulitku sih,jadi ya aku nyaman nyaman aja pake ini.soal harganya aman sesuai kantong pelajar dan produknya mudah didapat.Repurchase? maybe.", "Awalnya beli produk ini karena katanya dupenya laneige. Pas pemakaian beneran mirip laneige cuma agak lengket. Pas bangun tidur too oily. Mungkin yang dry skin akan cocok. Pas pemakaian agak perih. Not recommended for normal to oily skin.", "udhlama nyobain karena pengen tau hasilnya gmn. pertama x di aplikasiin emang sih 1 tingkat lebih cerah tapi pas lagi keringetan jadi luntur dong kayak susu gitu. jadi malu. di kulit aku ga ada efek jangka panjangnya sih", "Sebenernya aku beli ini buat ke labuan bajo tapi pas aku pakai selama disana dan di bali kayak ga cocok karena kulit aku kebakar banget di area perut dan dia ada wangi perfume jadi agak kurang disarankan untuk trip pantai tapi teksturnya oke cepat nyerap. Not reccomended for snorkel tho", "Sun screen nya bikin muka aku jadi kusam, gradakan, dan nambah jerawat 😭 hasilnya emang langsung mencerahkan gitu kayak tone up cream tapi aku ga suka banget. Bikin kulit jadi ga rata alias abu-abu;( Teksturnya agak padat jadi susah buat di blend ke muka."], "night cream": ["Setiap pakai ini malam hari, pagi nya langsung kencang, cerah dan melembab kan. Selalu pakai Setiap hari karena sesuka itu, aku selalu repeat order karena nyaman dengan produk nya. Bagus dan terjangkau sekali harga nya. Sangat rekomend sekali", "Night cream yg bnr” ringan gk lengket sama sekali. Tekstur cair rada kental dan meresap dengan cepat , membuat wajah lebih terdehirasi saat tidur dan bangun dengan kondisi sangat fresh 🥰. Produk ini bisa untuk wajah yg oili , benar” tdk lengket", "Entah kenapa di aku lebih cepetan abis night creamnya drpd day creamnya wkwk mungkin karena aku ga pernah bolos pake night creamnya ya. Karena emang enak bgt pake acne night cream ini, jd lembab gitu. Trs emang beneran bikin aku jarang jerawatan. Aku pake sepaket sm serum dan day creamnya ya. Pasti repurchase!✨", "aku dulu beli paket ini sama os kk kls ku, udh satu paket sama day cream nya. kurang suka sama aroma nya, agak rada menyengat lalu kurang ngelembapin dan tidak ada perubahan apa-apa🥲 mungkin bisa di upgrade lagi skincare-skincare scarlett🤗", "awal pakek produk azarine wajahku sih bagus ya jadi bersih gitu, tetapi lama kelamaan setelah beberapa minggu di wajahku jadi banyak bruntusannya dan wajahku menjadi jadi kusam, mungkin gak cocok ya, jadi gak pakek lagi dah", "Beli di official produknya scarlet di shoppee .. Banyak yang review cocok, tpi di aku gak cocok, malah jdi bruntusan engga gau kenapa, baru sekali pemakaian, yang tertarik beli bisa hbungin ig aku @talithadinaa .. makasii :) semoga di kalian cocok yaahh ..", "breakout breakout breakout. dipake di muka dan leher bentol-bentol dan jerawat. apalagi dileher itu sih hampir ga pernah jerawatan bisa muncul karena ini. awalnya kirain purging terus orang rumah ngeliat kok bentol-bentol makin banyak. baunya juga ga enak banget.", "Baru pertama kali beli dan udah sekitar 3 bulan make cream ini karna make nya juga hemat. Awal make sekali dua kali oke, kerasa efeknya, kulit kencang, kerutan halus hilang. Tapi makin lama makin muncul bruntusan sama close komedo di daerah pipi:(((( padahal sebelum make cream ini wajah ga ada masalah sama sekali:'(((("], "serum": ["Suka bgt sama serum dri whitelab, bikin muka aku jd lembab bgt gak kering sama sekali , tahan lama jugaaa.. mau di pake siang atau malam bikin muka ga kering , makin lama pakai jd makin glowing bggt muka aku , secinta itu sih sama produk whitelab", "bagus bangett, wangi nya enak banget bikin tenang gitu. karna peeling serum jadi gak bisa dipake tiap hari dan cuma dipake malam hari aja. teksturnya cair, ada aroma bunga tapi gak ganggu malah enak enak aja menurut aku. hasilnya bagus kalau rutin bisa bantu pudarin bekas jerawat juga", "Waktu aku sebelum Pakai serum ini wajah terlihat kusam dan setelah Pakai serum ini jadi enak terlihat cerah di wajah dan bersih dan kenyal, rekomendasi sih untuk serum ini seneng banget pakai nya... Terima kasih whitelab", "Diaku bikin bruntusan banyak, untuk mecerahkan juga gk begitu keliatan not rekomended pakai niacinamide persentase tinggi, sebaiknya pakai yang rendah dulu............:.::::::::::::::::::::::::::::::::::::::::::::::::::::", "Aku combination type, pernah pake produk ini kurang keliatan sih efeknya di aku termasuk buat nyerahinnya, agak kecewa sih dengan harga segitu ngga ada hasil mau repurchase takut hasilnya sama😭 aku saranin coba liat2 review combination skin lain siapa tau beda hasil😭", "bingung ya bunda, judulnya calm down tapi di aku malah bikin geradakan 😭 gatel pula di kulit 😭 gatau bahan mana yg bikin gatel. mungkin memang ga cocok aja di aku ya bund.. yaudahlah, drpd sayang, kucampur aja sama body lotion 😭🙏🏻🙏🏻🙏🏻", "Ak ga cocok pake oil ini sebagai pengganti pelembab muka, efek ke ak jd bruntusan bgtu🥲 Padahal ak hanya pemakaian setiap malam saja. Mungkin ak akan prefer penggunaanny untuk badan atau tambahan extra untuk lotion jadi lebih melembabkan lagi", "Harganya murah dan review-review di sosial media cukup bagus jadi saya coba.. Baunya wangi banget jadi fragrancenya cukup kenceng.. Di kulit saya juga ga cocok habis pakai malah jadi beruntusan.. . . . ."], "sunscreen": ["Type suncreen yang bikin melembabkan kulit sih, aku type kulit super duper kering cuma pake produk ini untuk base makeup aku supaya gak nge crack aman banget makeup jadi nempel dan bikin complexion aku gampang di blandnya. Suka banget sm produknya", "Dapet harga 16K untuk ukuran 15ml, beli karena emang ngerasa lagi butuh sunscreen tapi belum nemu juga sunscreen yang cocok. Di kulit aku yang lagi sensitif karena salah pakai produk, ini lumayan sih. Enggak ada aroma aneh-aneh. Baru pakai sekali. Semoga cocok …", "Teksturnya sangaattt light sekali, sangat ringan. Aku coba test di tangan, tepatnya di punggung tangan. Menyerapnya perlahan-lahan, basahnya juga agak lama. Tapi, dia gak wangi sama sama sekali yah. Jadi, seharusnya aman buat buat kulif sensitif", "Sunscreen ini teksturnya gel, setelah diaplikasikan ke wajah pun relatif enak dan mudah menyerap. Sayangnya, di wajah aku sunscreen ini pilling :( Entah mengapa yaa. Terus aromanya juga agak2 apek kimia gitu (?). Sedih deh padahal kayaknya cocok di banyak orang tapi kurang cocok di aku.", "Untuk sunscreen mist dari azarine ini aku kurang suka. Pertama pada saat di apply, butiran spray tidak merata, jadi harus di ratain lagi pakai tangan. Trus untuk produk sunscreen spray teksturnya juga kurang ringan, jadi lumayan lama produknya nyerap ke kulit", "Beli karena sunscreen wardah yang calming/warna ijo tua yang sering aku pake habis stocknya. Untuk kulit aku yang mudah jerawatan, aku kurang cocok sama sunscreen ini karena bikin komedoan di hidung dan kalo di timpa make up gampang crack. Untuk hasilnya memang matte tapi bikin sumuk diwajah ini sepengalamanku ya😭😭", "Pros : for reapply Cons : untuk meresap dikulit butuh waktu lama, bikin oily dikulit berminyk dan yang paling ganggu adalah spray terlalu lebar alias bisa sampe ke badan badan padahal cuma nyemprot di muka, packaging ringkih, tutup mudah pecah Overall, wouldn’t buy this product again", "Niatnya beli yang model spray buat touch up sunscreen tapi ternyata ini spray nya nggak lembut, keluar cairan kayak model pump. Dan TIDAK recommend dipakai panas-panasan di bawah matahari langsung karena bikin kulit KEBAKAR matahari. Nggak ampuh untuk proteksi kulit outdoor."], "toner": ["it’s a good hydrating toner for daily use and special purposes. the toner absorbs quickly and doesn’t leave you with a sticky feeling. it also keeps your skin hydrated and clean. you also don’t need to apply a lot so it is very economic for an average user.", "Tekstur cair, nggak bikin perih dan cekit-cekit ketika diaplikasikan. Pakai secukupnya di kapas, setelah membersihkan wajah dengan facial foam. Lumayan bersih dan bisa menarik banyak kotoran ketika digunakan. Packaging sempat ganti, yang sebelumnya bentuknya lebih feminim, yang sekarang lebih kaku.", "Ini toner paling unik sejauh ini yang aku punya! Ada microbeadsnya hehe. Kalau pake toner ini tuh kulit kayak gak ada teksturnya. Ini perfect combo kalau digabungin sama rangkaian Acne karena bikin calming jerawat, ngeredain jerawat, dan gak bikin jerawat baru tumbuh. Love it!", "beberapa kali aku ngabisin toner ini, kalau awal-awal pakai ada sensasi panas tapi ga bikin beruntusan atau nambah jerawat. Teksturnya cair, mudah meresap dan menurut ku ada baunya walaupun ga terlalu menyengat. Efek pore refining ga ngaruh sih kalo di aku. Repurchase? no karena beralih ke yang kandungan nya gentle", "karena cocok sama fw dan moisturizernya, so aku coba juga beli toner hydra rose ini. awal pemakaian emang kerasa seger, tapi ada sedikit sensasi panas. mungkin ini akan cocok buat kulit yang tidak sensitif. untuk segi kelembabannya, toner ini so so lah ya.", "Beli karena review doi yg bagus. Tipe kulit normal to dry, sekitar tiga sampai lima menit pemakaian, muka gue langsung kering kerontang toner ini kek nyedot sebum alami gue. Buat oily skin mungkin cocok.", "Awal pake rasanya panas banget apalagi bagian yang ada jerawat sama pipi terus merah,awal nya masih gapapa aja kirain reaksi awal karna waktu itu emang lagi jerawat parah tapi lama” ngga ngaruh yang ada setiap pake makin panas :( huhuhu sayang banget ini ga cocok di aku", "Ini toner harusnya mengecilkan pori di sekitar pipi dekat hidung tapi malah bikin cekit-cekit dan perih di area yang berpori besar. Wanginya strong banget dan saat dipakai agak kerasa dingin dan segar. Setelahnya kulit terasa kering kerontang."]};
-function WardahPredictor(M) {
-  const STOP = new Set(M.stop), SLANG = M.slang, STEM = M.stem, TERM = new Map(M.terms.map((t, i) => [t, i]));
-  function bersihkan(raw) {
-    let t = String(raw).toLowerCase();
-    t = t.replace(/https?:\/\/\S+/g, ' ');
-    t = t.replace(/[^\x00-\x7f]/g, ' ');
-    t = t.replace(/[^a-z\s]/g, ' ');
-    t = t.replace(/(.)\1{2,}/g, '$1');
-    const out = [];
-    for (let w of t.split(/\s+/)) {
-      if (!w) continue;
-      w = SLANG[w] || w;
-      if (STOP.has(w) || w.length < 2) continue;
-      out.push(STEM[w] || w);
-    }
-    return out;
-  }
-  function predict(raw) {
-    const toks = bersihkan(raw).filter(w => w.length >= 2);
-    const grams = toks.slice();
-    for (let i = 0; i < toks.length - 1; i++) grams.push(toks[i] + ' ' + toks[i + 1]);
-    const tf = new Map();
-    for (const g of grams) { const j = TERM.get(g); if (j !== undefined) tf.set(j, (tf.get(j) || 0) + 1); }
-    const x = new Map(); let norm = 0;
-    for (const [j, c] of tf) { const v = (1 + Math.log(c)) * M.idf[j]; x.set(j, v); norm += v * v; }
-    norm = Math.sqrt(norm);
-    if (norm > 0) for (const [j, v] of x) x.set(j, v / norm);
-    const K = M.classes.length, s = new Array(K).fill(0);
-    for (let k = 0; k < K; k++) { s[k] = M.intercept[k]; for (const [j, v] of x) s[k] += M.coef[k][j] * v; }
-    const mx = Math.max(...s), e = s.map(v => Math.exp(v - mx)), z = e.reduce((a, b) => a + b, 0);
-    const proba = e.map(v => v / z);
-    let best = 0; for (let k = 1; k < K; k++) if (proba[k] > proba[best]) best = k;
-    const contrib = [];
-    for (const [j, v] of x) contrib.push({ term: M.terms[j], c: M.coef[best][j] * v });
-    contrib.sort((a, b) => b.c - a.c);
-    return { clean: toks.join(' '), proba, label: M.classes[best], classes: M.classes, matched: x.size, top: contrib.filter(o => o.c > 0).slice(0, 6) };
-  }
-  return { predict, bersihkan };
-}
-
-
 const TEMA = {
   iritasi: ['iritasi, jerawat, atau perih', 'Tinjau kandungan yang memicu reaksi, tambahkan anjuran patch test dan pemakaian bertahap, dan beri label jelas untuk kulit sensitif.'],
   tekstur: ['tekstur lengket atau berat', 'Perbaiki tekstur agar lebih ringan dan cepat meresap, atau jelaskan takaran pakai yang tepat.'],
@@ -417,44 +375,7 @@ function drawUlasan() {
     }
   }
   $('saran').innerHTML = items;
-  if (!$('inp').value.trim() || $('inp').value === lastFill) fillExamples(); else renderModel();
 }
-
-let predictor = null, lastFill = '';
-function esc(s) { return s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
-function fillExamples() { lastFill = (CONTOH[sel] || []).join('\n'); $('inp').value = lastFill; renderModel(); }
-function renderModel() {
-  if (!predictor) return;
-  const lines = $('inp').value.split(/\n+/).map(s => s.trim()).filter(Boolean);
-  if (!lines.length) { $('result').innerHTML = '<p class="status">Tempel ulasan atau pakai tombol contoh.</p>'; return; }
-  const res = lines.map(t => ({ t, r: predictor.predict(t) })), n = res.length, c = { Positif: 0, Netral: 0, Negatif: 0 };
-  res.forEach(o => c[o.r.label]++);
-  const C = CNT[sel], base = pct(C.W[0], C.W[0] + C.W[1] + C.W[2]), pos = c.Positif / n * 100;
-  let msg;
-  if (n < 10) msg = `Baru ${n} ulasan, terlalu sedikit untuk dibandingkan. Tambah sampai 30 ulasan atau lebih.`;
-  else if (pos - base <= -5) msg = `Lebih negatif dari rata-rata Wardah untuk ${sel}. Cek kata penyebab di bawah.`;
-  else if (pos - base >= 5) msg = `Lebih positif dari rata-rata Wardah untuk ${sel}.`;
-  else msg = `Sebanding dengan rata-rata Wardah untuk ${sel}.`;
-  const words = new Map();
-  res.filter(o => o.r.label !== 'Positif').forEach(o => o.r.top.slice(0, 4).forEach(w => words.set(w.term, (words.get(w.term) || 0) + 1)));
-  const tw = [...words.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 8);
-  const tc = {};
-  res.filter(o => o.r.label !== 'Positif').forEach(o => TKEYS.forEach(k => { if (TRX[k].test(o.t)) tc[k] = (tc[k] || 0) + 1; }));
-  const tcs = Object.entries(tc).sort((a, b) => b[1] - a[1]).slice(0, 3);
-  let html = `<div class="stack" role="img" aria-label="Komposisi">${[['pos', c.Positif], ['neu', c.Netral], ['neg', c.Negatif]].map(([k, v]) => `<div class="${k}" style="width:${v / n * 100}%"></div>`).join('')}</div>
-    <div class="sleg" style="grid-column:auto"><span><b>${fmt(pos, 1)}%</b> positif Anda</span><span>Wardah ${fmt(base, 1)}%</span><span>netral ${c.Netral}</span><span>negatif ${c.Negatif}</span></div>
-    <p class="note ${msg.startsWith('Lebih negatif') ? 'warn' : ''}">${msg}</p>`;
-  if (tcs.length) html += `<ul class="todo">${tcs.map(([k, v]) => `<li class="warn"><b>Atasi ${TEMA[k][0]}</b><span>${v} ulasan. ${TEMA[k][1]}</span></li>`).join('')}</ul>`;
-  if (tw.length) html += `<div><span class="status">Kata yang mendorong ulasan netral dan negatif</span><div class="words">${tw.map(w => `<span class="w">${w[0]}${w[1] > 1 ? ' x' + w[1] : ''}</span>`).join('')}</div></div>`;
-  html += `<div class="rows">${res.map(o => `<div class="row"><span class="tag ${o.r.label}">${o.r.label}</span><span>${esc(o.t.length > 140 ? o.t.slice(0, 140) + '...' : o.t)}<span class="kw">keyakinan ${fmt(Math.max(...o.r.proba) * 100)}%</span></span></div>`).join('')}</div>
-    <p class="status">Model lebih sering salah pada kelas netral dan negatif (F1 sekitar 0,4). Anggap ini perkiraan.</p>`;
-  $('result').innerHTML = html;
-}
-$('bEx').addEventListener('click', fillExamples);
-$('bClr').addEventListener('click', () => { $('inp').value = ''; lastFill = ''; renderModel(); });
-let timer; $('inp').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(renderModel, 180); });
-fetch('model.json').then(r => r.json()).then(M => { predictor = WardahPredictor(M); renderModel(); })
-  .catch(() => { $('result').innerHTML = '<p class="status">Model gagal dimuat. Muat ulang halaman ini.</p>'; });
 
 /* ---------------- Tab ---------------- */
 function showTab(k) {
@@ -488,10 +409,11 @@ function drawGab() {
   const cell = (d, m) => {
     const q = GAB[d.k].q, rel = ((m - d.p) % 12 + 12) % 12;
     if (m === d.p) return 'pk';
-    if (q === 'K1') return rel >= 10 ? 'fix' : '';
-    if (q === 'K3') return 'slow';
-    if (q === 'K2') return rel === 11 ? 'prep' : '';
-    return 'year';
+    const inR = ramp(d).includes(m);
+    if (q === 'K1') return inR ? 'fix' : '';
+    if (q === 'K3') return inR ? 'prep' : 'slow';
+    if (q === 'K2') return inR ? 'prep' : '';
+    return inR ? 'prep' : 'year';
   };
   const dec = { K1: 'Perbaiki dulu sebelum puncak', K3: 'Perbaiki bertahap', K2: 'Siapkan lalu promosi agresif', K4: 'Promosi sepanjang tahun' };
   let h = '<div></div>' + BL.map(b => `<div class="h">${b}</div>`).join('') + '<div class="h l">Keputusan</div>';
@@ -503,20 +425,19 @@ function drawGab() {
   }
   $('gcal').innerHTML = h;
   $('gcal').querySelectorAll('.nm').forEach(b => b.addEventListener('click', () => { select(b.dataset.k); $('gtitle').scrollIntoView({ behavior: 'smooth' }); }));
-  $('glegend').innerHTML = '<span><i style="background:var(--accent)"></i>\u2605 bulan puncak (promosi)</span><span><i style="background:var(--neg)"></i>P perbaiki produk dan citra</span><span><i style="background:var(--prep)"></i>S siapkan stok dan konten</span><span><i style="background:color-mix(in srgb, var(--neg) 16%, var(--surface))"></i>perbaiki bertahap sepanjang tahun</span><span><i style="background:var(--accent-soft)"></i>promosi sepanjang tahun</span><span>* ulasan kompetitor sedikit</span>';
+  $('glegend').innerHTML = '<span><i style="background:var(--accent)"></i>\u2605 bulan puncak: promosi</span><span><i style="background:var(--neg)"></i>P perbaiki produk dan citra dulu, sambil menyiapkan stok dan konten (kategori citra tertinggal)</span><span><i style="background:var(--prep)"></i>S siapkan stok dan konten (kategori citra setara atau unggul)</span><span><i style="background:color-mix(in srgb, var(--neg) 16%, var(--surface))"></i>perbaiki bertahap sepanjang tahun</span><span><i style="background:var(--accent-soft)"></i>promosi sepanjang tahun</span><span style="flex-basis:100%">P dan S jatuh pada bulan-bulan berturut-turut sebelum puncak yang minat pencariannya naik (paling banyak 3). * ulasan kompetitor sedikit, selisih sentimen tidak dibaca tegas.</span>';
   const names = q => rows.filter(d => GAB[d.k].q === q).map(d => d.k + (GAB[d.k].small ? ' (*)' : ''));
-  const bl = d => BP[wrap(d.p - 2) - 1];
-  const items = [];
+    const items = [];
   const k1 = rows.filter(d => GAB[d.k].q === 'K1'), k3 = rows.filter(d => GAB[d.k].q === 'K3'), k2 = rows.filter(d => GAB[d.k].q === 'K2'), k4 = rows.filter(d => GAB[d.k].q === 'K4');
-  if (k1.length) items.push(`<b>${names('K1').join(' dan ')}:</b> citra tertinggal dan minat naik tajam. Mulai perbaikan ${bl(k1[0])}, selesai sebelum ${BP[k1[0].p - 1]}.`);
+  if (k1.length) items.push(`<b>${names('K1').join(' dan ')}:</b> citra tertinggal dan minat naik tajam. Perbaiki pada masa minat naik, ${k1.map(d => d.k + ' ' + rng(ramp(d))).join(', ')}, dan selesaikan sebelum ${BP[k1[0].p - 1]}.`);
   if (k3.length) items.push(`<b>${names('K3').join(' dan ')}:</b> minat stabil, citra sedikit tertinggal. Perbaiki bertahap tanpa tenggat musiman.`);
-  k2.forEach(d => items.push(`<b>${d.k}:</b> citra setara atau lebih baik. Siapkan stok ${BP[wrap(d.p - 1) - 1]}, promosi agresif ${BP[d.p - 1]}.`));
-  if (k4.length) items.push(`<b>${names('K4').join(' dan ')}:</b> citra kuat dan minat stabil. Promosi sepanjang tahun, dorongan ekstra di ${BP[k4[0].p - 1]}.`);
+  k2.forEach(d => items.push(`<b>${d.k}:</b> citra setara atau lebih baik. Siapkan stok ${rng(ramp(d))}, promosi agresif ${BP[d.p - 1]}.`));
+  if (k4.length) items.push(`<b>${names('K4').join(' dan ')}:</b> citra kuat dan minat stabil. Promosi sepanjang tahun. Siapkan stok untuk puncak: ${k4.map(d => d.k + ' ' + rng(ramp(d))).join(', ')}.`);
   $('gorder').innerHTML = items.map(i => `<li>${i}</li>`).join('');
 
   // rencana per kategori
   const d = DATA.find(x => x.k === sel), g = GAB[sel], q = g.q, p = d.p;
-  const prep = [wrap(p - 2), wrap(p - 1)], ev = wrap(p + 1);
+  const prep = ramp(d), ev = wrap(p + 1);
   const range = (a, b) => `${BP[a - 1]} sampai ${BP[b - 1]}`;
   const fx = topFix(sel), win = topWin(sel), W = KEL.data[sel].W;
   const fixLi = fx ? fx.map(o => `<li>Atasi ${TEMA[o.t][0]}. ${TEMA[o.t][1]}<small>${fmt(o.w)}% ulasan netral dan negatif Wardah${o.kk !== null ? ', kompetitor ' + fmt(o.kk) + '%' : ''}</small></li>`).join('') : `<li>Kumpulkan lebih banyak ulasan Wardah. Baru ${W.n} ulasan netral dan negatif, belum cukup untuk memutuskan perbaikan.</li>`;
@@ -528,21 +449,20 @@ function drawGab() {
   if (q === 'K1') promoItems = `<li>Tahan promosi besar sampai ulasan baru menunjukkan perbaikan. Promosi ringan boleh jalan.</li>` + (win ? `<li>Angkat keunggulan: ${TEMA[win.t][0]} lebih jarang dikeluhkan di Wardah.<small>Wardah ${fmt(win.w)}% vs kompetitor ${fmt(win.kk)}%</small></li>` : '');
   else if (q === 'K3') promoItems = `<li>Promosi ringan, dengan sedikit dorongan di ${BP[p - 1]}.</li>` + (win ? `<li>Angkat keunggulan: ${TEMA[win.t][0]} lebih jarang dikeluhkan di Wardah.<small>Wardah ${fmt(win.w)}% vs kompetitor ${fmt(win.kk)}%</small></li>` : '');
   else promoItems = `<li>Dorong promosi saat minat pencarian tertinggi.</li>` + (win ? `<li>Angkat keunggulan: ${TEMA[win.t][0]} lebih jarang dikeluhkan di Wardah.<small>Wardah ${fmt(win.w)}% vs kompetitor ${fmt(win.kk)}%</small></li>` : '');
-  const evalItems = `<li>Bandingkan % ulasan positif baru dengan angka sekarang: Wardah ${fmt(g.pw, 1)}%, kompetitor ${fmt(g.pk, 1)}%.</li><li>Tempel ulasan baru di tab Ulasan untuk melihat keluhan yang muncul.</li>`;
+  const evalItems = `<li>Bandingkan % ulasan positif baru dengan angka sekarang: Wardah ${fmt(g.pw, 1)}%, kompetitor ${fmt(g.pk, 1)}%.</li><li>Baca ulang keluhan teratas di tab Ulasan dan lihat apakah porsinya turun.</li>`;
   const small = g.small ? '<p class="note warn">Ulasan kompetitor di kategori ini sangat sedikit, jadi selisih sentimen tidak dibaca tegas.</p>' : '';
   $('gtitle').textContent = 'Rencana ' + sel;
   $('plan').innerHTML = `<span class="badge ${badgeCls}">${badge}</span><p class="verdict">${verdict}</p>${small}
     <div class="phases">
-      <div class="phase prep"><span class="when">${q === 'K3' ? 'Sepanjang tahun' : range(prep[0], prep[1])}</span><span class="what">${prepWhat}</span><ul>${prepItems}</ul></div>
+      <div class="phase prep"><span class="when">${q === 'K3' ? 'Sepanjang tahun' : rng(prep)}</span><span class="what">${prepWhat}</span><ul>${prepItems}</ul></div>
       <div class="phase promo"><span class="when">${BP[p - 1]}</span><span class="what">Promosi</span><ul>${promoItems}</ul></div>
       <div class="phase eval"><span class="when">${BP[ev - 1]}</span><span class="what">Evaluasi</span><ul>${evalItems}</ul></div>
     </div>
-    <p class="caption">${QNAME[q]}. Bulan siapkan dan evaluasi adalah asumsi (dua bulan sebelum dan sebulan sesudah puncak). Selisih sentimen ${g.s > 0 ? '+' : ''}${fmt(g.s, 1)} poin.</p>`;
+    <p class="caption">${QNAME[q]}. Bulan siapkan adalah bulan berturut-turut sebelum puncak yang minatnya naik (paling banyak 3). Bulan evaluasi, sebulan sesudah puncak, adalah asumsi. Selisih sentimen ${g.s > 0 ? '+' : ''}${fmt(g.s, 1)} poin.</p>`;
   $('gcatbar').innerHTML = ORDER.map(x => `<button class="cat" aria-pressed="${x.k === sel}" data-k="${x.k}">${x.k}</button>`).join('');
   $('gcatbar').querySelectorAll('.cat').forEach(b => b.addEventListener('click', () => select(b.dataset.k)));
 }
 
 select(sel);
 </script>
-
 </body></html>
